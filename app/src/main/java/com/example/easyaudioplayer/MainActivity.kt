@@ -4,43 +4,33 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
-import androidx.annotation.RequiresApi
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.outlined.List
 import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import com.example.easyaudioplayer.ui.theme.EasyAudioPlayerTheme
-import java.net.URI
+import dev.vivvvek.seeker.Seeker
+import dev.vivvvek.seeker.SeekerDefaults
 
 class MainActivity : ComponentActivity() {
 
@@ -80,55 +70,46 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun TextMusic() {
         ConstraintLayout {
-            val (picture, line, pauseAndPlayButton) = createRefs()
+            val (picture, volumeIcon, volume, line, pauseAndPlay, loop) = createRefs()
 
-            Box(
+            Image(
+                painter = painterResource(id = R.drawable.ic_launcher_background),
+                contentDescription = "",
                 modifier = Modifier
                     .fillMaxWidth()
-                    .fillMaxHeight(0.7f)
-                    .padding(50.dp)
+                    .fillMaxHeight(0.6f)
+                    .padding(40.dp)
                     .constrainAs(picture) {
                         top.linkTo(parent.top)
-                    },
-                contentAlignment = Alignment.Center
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.ic_launcher_background),
-                    contentDescription = "",
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
+                        centerHorizontallyTo(parent)
+                    }
+            )
 
-            Canvas(
+            Seeker(
+                value = viewModel.volume,
+                onValueChange = { viewModel.updateVolume(it) },
+                colors = SeekerDefaults.seekerColors(
+                    progressColor = Color.Green,
+                    trackColor = Color.Gray,
+                    thumbColor = Color.Green
+                ),
                 modifier = Modifier
-                    .fillMaxWidth(0.7f)
-                    .padding(50.dp)
+                    .padding(horizontal = 20.dp)
+                    .fillMaxWidth()
                     .constrainAs(line) {
                         top.linkTo(picture.bottom)
-                    },
-            ) {
-                drawLine(
-                    color = Color.Green,
-                    start = Offset.Zero,
-                    end = Offset(300.dp.toPx(), 0f),
-                    strokeWidth = 8.dp.toPx()
-                )
-
-                drawCircle(
-                    color = Color.Green,
-                    radius = 12.dp.toPx(),
-                    center = Offset.Zero
-                )
-            }
+                    }
+            )
 
             Button(
                 modifier = Modifier
-                    .size(80.dp)
-                    .constrainAs(pauseAndPlayButton) {
+                    .size(150.dp)
+                    .padding(16.dp)
+                    .constrainAs(pauseAndPlay) {
                         top.linkTo(line.bottom)
                         centerHorizontallyTo(parent)
                     },
-                enabled = true,
+                enabled = viewModel.music.value != null,
                 onClick = {
                     if(viewModel.music.value?.isPlaying == true) {
                         viewModel.music.value!!.pause()
@@ -142,6 +123,65 @@ class MainActivity : ComponentActivity() {
                     imageVector = Icons.Outlined.PlayArrow,
                     contentDescription = "play and pause button",
                     modifier = Modifier.size(200.dp)
+                )
+            }
+
+            Icon(
+                painter = painterResource(
+                    id = if(viewModel.volume == 0f) {
+                            R.drawable.volume_off
+                        } else if (viewModel.volume < 0.5f) {
+                            R.drawable.volume_down
+                        } else {
+                            R.drawable.volume_up
+                        }
+                ),
+                contentDescription = null,
+                modifier = Modifier
+                    .constrainAs(volumeIcon) {
+                        end.linkTo(volume.start)
+                        centerVerticallyTo(volume)
+                    }
+            )
+
+            Seeker(
+                value = viewModel.volume,
+                onValueChange = { viewModel.updateVolume(it) },
+                colors = SeekerDefaults.seekerColors(
+                    progressColor = Color.LightGray,
+                    trackColor = Color.Gray,
+                    thumbColor = Color.LightGray
+                ),
+                modifier = Modifier
+                    .padding(vertical = 10.dp)
+                    .fillMaxWidth(0.35f)
+                    .constrainAs(volume) {
+                        bottom.linkTo(parent.bottom)
+                        centerHorizontallyTo(pauseAndPlay)
+                    }
+            )
+
+            IconButton(
+                onClick = {
+                    viewModel.setLoop(viewModel.music.value?.isLooping == false)
+                },
+                modifier = Modifier
+                    .padding(16.dp)
+                    .constrainAs(loop) {
+                        bottom.linkTo(parent.bottom)
+                        end.linkTo(parent.end)
+                    },
+                colors = IconButtonDefaults.iconButtonColors(
+                    if(viewModel.music.value?.isLooping == true) {
+                        Color.LightGray
+                    } else {
+                        Color.Unspecified
+                    }
+                )
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.loop),
+                    contentDescription = "loop"
                 )
             }
         }

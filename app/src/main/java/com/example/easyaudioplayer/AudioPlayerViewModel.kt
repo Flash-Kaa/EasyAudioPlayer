@@ -17,18 +17,28 @@ import java.net.URI
 
 class AudioPlayerViewModel: ViewModel() {
     val music = mutableStateOf<MediaPlayer?>(null)
+    var volume by mutableStateOf(1f)
+        private set
+
+    fun setLoop(value: Boolean) {
+        music.value?.isLooping = value
+    }
+
+    fun updateVolume(newVolume: Float) {
+        music.value?.setVolume(newVolume, newVolume)
+        volume = newVolume
+    }
 
     fun updateMusic(context: Context, uri: Uri?) {
         if(uri == null) {
             return
         }
 
-        val mp = MediaPlayer()
+        music.value = MediaPlayer()
 
-        mp.setAudioStreamType(AudioManager.STREAM_MUSIC)
-        mp.setDataSource(context, uri)
-        mp.prepare()
-        music.value = mp
+        music.value!!.setAudioStreamType(AudioManager.STREAM_MUSIC)
+        music.value!!.setDataSource(context, uri)
+        music.value!!.prepare()
     }
 }
 
